@@ -1,53 +1,51 @@
 #include "./monitor.h"
-#include <iostream>
+#include <assert.h>
 #include <thread>
 #include <chrono>
+#include <iostream>
+#include <string>
 
-using std::cout, std::flush;
-using std::this_thread::sleep_for;
-using std::chrono::seconds;
+using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
-VitalStatus checkVitals(float temperature, float pulseRate, float spo2, const VitalLimits& limits) {
-  if (temperature < limits.tempMin || temperature > limits.tempMax) {
-    return VitalStatus::TemperatureCritical;
-  }
-  if (pulseRate < limits.pulseMin || pulseRate > limits.pulseMax) {
-    return VitalStatus::PulseRateCritical;
-  }
-  if (spo2 < limits.spo2Min) {
-    return VitalStatus::Spo2Critical;
-  }
-  return VitalStatus::Normal;
+bool isTemperatureOk(float temperature) {
+  return temperature >= 95 && temperature <= 102;
 }
 
-void blinkAlarm(int times, int intervalSec) {
-  for (int i = 0; i < times; ++i) {
+bool isPulseOk(float pulseRate) {
+  return pulseRate >= 60 && pulseRate <= 100;
+}
+
+bool isSpO2Ok(float spo2) {
+  return spo2 >= 90;
+}
+
+void blinkAlarm(int times) {
+  for (int i = 0; i < times; i++) {
     cout << "\r* " << flush;
-    sleep_for(seconds(intervalSec));
+    sleep_for(seconds(1));
     cout << "\r *" << flush;
-    sleep_for(seconds(intervalSec));
+    sleep_for(seconds(1));
   }
   cout << "\n";
 }
 
-int vitalsOk(float temperature, float pulseRate, float spo2) {
-  VitalLimits limits;
-  VitalStatus status = checkVitals(temperature, pulseRate, spo2, limits);
-
-  switch (status) {
-    case VitalStatus::Normal:
-      return 1;
-    case VitalStatus::TemperatureCritical:
-      cout << "Temperature is critical!\n";
-      break;
-    case VitalStatus::PulseRateCritical:
-      cout << "Pulse Rate is out of range!\n";
-      break;
-    case VitalStatus::Spo2Critical:
-      cout << "Oxygen Saturation out of range!\n";
-      break;
-  }
-
+void showAlert(const std::string& message) {
+  cout << message << "\n";
   blinkAlarm();
-  return 0;
+}
+
+int vitalsOk(float temperature, float pulseRate, float spo2) {
+  if (!isTemperatureOk(temperature)) {
+    showAlert("Temperature is critical!");
+    return 0;
+  }
+  if (!isPulseOk(pulseRate)) {
+    showAlert("Pulse Rate is out of range!");
+    return 0;
+  }
+  if (!isSpO2Ok(spo2)) {
+    showAlert("Oxygen Saturation out of range!");
+    return 0;
+  }
+  return 1;
 }
