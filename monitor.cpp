@@ -4,6 +4,8 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <functional>
 
 using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
@@ -19,6 +21,7 @@ bool isSpO2Ok(float spo2) {
   return spo2 >= 90;
 }
 
+// ---- ALERT/OUTPUT ----
 void blinkAlarm(int times) {
   for (int i = 0; i < times; i++) {
     cout << "\r* " << flush;
@@ -31,21 +34,28 @@ void blinkAlarm(int times) {
 
 void showAlert(const std::string& message) {
   cout << message << "\n";
-  blinkAlarm();
+  blinkAlarm(3);  // default 3 blinks
 }
 
+// ---- WRAPPER LOGIC ----
+struct VitalCheck {
+  std::function<bool(float)> check;
+  float value;
+  std::string message;
+};
+
 int vitalsOk(float temperature, float pulseRate, float spo2) {
-  if (!isTemperatureOk(temperature)) {
-    showAlert("Temperature is critical!");
-    return 0;
-  }
-  if (!isPulseOk(pulseRate)) {
-    showAlert("Pulse Rate is out of range!");
-    return 0;
-  }
-  if (!isSpO2Ok(spo2)) {
-    showAlert("Oxygen Saturation out of range!");
-    return 0;
+  std::vector<VitalCheck> checks = {
+    {isTemperatureOk, temperature, "Temperature is critical!"},
+    {isPulseOk, pulseRate, "Pulse Rate is out of range!"},
+    {isSpO2Ok, spo2, "Oxygen Saturation out of range!"}
+  };
+
+  for (const auto& vital : checks) {
+    if (!vital.check(vital.value)) {
+      showAlert(vital.message);
+      return 0; // fail fast
+    }
   }
   return 1;
 }
