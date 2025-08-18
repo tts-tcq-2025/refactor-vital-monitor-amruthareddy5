@@ -5,5 +5,4 @@ bool isPulseOk(float pulseRate);
 bool isSpO2Ok(float spo2);
 int vitalsOk(float temperature, float pulseRate, float spo2);
 void showAlert(const std::string& message);
-void blinkAlarm(int times = 6);
-
+void blinkAlarm(int times);
